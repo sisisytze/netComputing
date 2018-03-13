@@ -6,6 +6,9 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashSet;
 
+import java.sql.*;
+import java.util.Date;
+
 /**
  * A multithreaded chat room server.  When a client connects the
  * server requests a screen name by sending the client the
@@ -26,6 +29,58 @@ import java.util.HashSet;
  *     2. The server should do some logging.
  */
 public class ChatServer {
+    private static Connection connect = null;
+    private static Statement statement = null;
+    private static PreparedStatement preparedStatement = null;
+    private static ResultSet resultSet = null;
+    
+    private static final String DATABASE = "db";
+    private static final String TABLENAME = "tablename";
+    
+    private static void connectToDatabase() throws SQLException, Exception{
+        Class.forName("com.mysql.jdbc.Driver");
+        // Setup the connection with the DB
+        connect = DriverManager
+                .getConnection("jdbc:mysql://localhost/feedback?"
+                        + "user=sqluser&password=sqluserpw");
+
+        // Statements allow to issue SQL queries to the database
+        statement = connect.createStatement();
+    }
+    
+    private static void insertData(long mac, long sensorTimestamp, float latitude, float longitude, int sensorType, float data) throws SQLException {
+        preparedStatement = connect
+                .prepareStatement("insert into " + DATABASE+"."+TABLENAME + " values (default, ?, ?, ?, ?, ?, ?)");
+        
+        long serverTimestamp = new Timestamp(System.currentTimeMillis()).getTime();
+        
+        preparedStatement.setLong(1, mac);
+        preparedStatement.setFloat(2, latitude);
+        preparedStatement.setFloat(3, longitude);
+        preparedStatement.setFloat(4, data);
+        //preparedStatement.setLong(5, sensorTimestamp);
+        preparedStatement.setLong(5, serverTimestamp);
+        preparedStatement.setInt(6, sensorType);
+        preparedStatement.executeUpdate();
+    }
+    
+    private static void close() {
+        try {
+            if (resultSet != null) {
+                resultSet.close();
+            }
+
+            if (statement != null) {
+                statement.close();
+            }
+
+            if (connect != null) {
+                connect.close();
+            }
+        } catch (Exception e) {
+
+        }
+    }
 
     /**
      * The port that the server listens on.
@@ -52,6 +107,14 @@ public class ChatServer {
     public static void main(String[] args) throws Exception {
         System.out.println("The server is running.");
         ServerSocket listener = new ServerSocket(PORT);
+        System.out.println("Connecting to Database...");
+        try {
+            connectToDatabase();
+        } catch (Exception e){
+            // do something
+        } finally {
+            close();
+        }
         try {
             while (true) {
                 new Handler(listener.accept()).start();
@@ -126,12 +189,15 @@ public class ChatServer {
                     if (input == null) {
                         return;
                     }
-		    System.out.println(input);
+		    System.out.println("Trying to insert data: " + input);
+		    String[] values = input.split("|");
+		    //insertData(Long.parseLong(values[0]), Long.parseLong(values[1]), Float.parseFloat(values[2]), 
+                    //    Float.parseFloat(values[3]), Integer.parseInt(values[4]), Float.parseFloat(values[5]));
                     for (PrintWriter writer : writers) {
                         writer.println("MESSAGE " + name + ": " + input);
                     }
                 }
-            } catch (IOException e) {
+            } catch ( IOException e) {
                 System.out.println(e);
             } finally {
                 // This client is going down!  Remove its name and its print
