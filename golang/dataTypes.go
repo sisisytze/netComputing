@@ -4,11 +4,15 @@ package main
 // Als in ints strings floats etc?
 type Sensor struct {
 	SensorID int `json:"sensor_id"`
-	Timestamp time.Time `json:"timeStamp"`
+	MAC string `json:"mac_address"`
 	Latitude string `json:"latitude"`
 	Longtitude string `json:"longtitude"`
-	SensorData float64 `json:"data"`
 	SensorType string `json:"sensor_type"`	
 }
 
+type Measurement struct {
+  SensorID int 'json:"sensor_id"`
+	Timestamp time.Time `json:"timeStamp"`
+	SensorData float64 `json:"data"`
+}
 
