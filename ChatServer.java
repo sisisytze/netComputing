@@ -121,7 +121,7 @@ public class ChatServer {
                 listener.close();
             }
         } catch (Exception e){
-            System.out.println("Failed to connect to Database:\n"+e.getMessage());
+            System.out.println("Failed to connect to Database:\n"+e.getCause());
             // do something
         } finally {
             close();
