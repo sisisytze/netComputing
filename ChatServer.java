@@ -34,15 +34,18 @@ public class ChatServer {
     private static PreparedStatement preparedStatement = null;
     private static ResultSet resultSet = null;
     
-    private static final String DATABASE = "db";
+    private static final String DATABASE = "measurementsdb";
     private static final String TABLENAME = "tablename";
+
+    private static final String ip = "94.23.200.26:3306";
+    private static final String user = "netcomp";
+    private static final String pw = "envstat";
     
     private static void connectToDatabase() throws SQLException, Exception{
         Class.forName("com.mysql.jdbc.Driver");
         // Setup the connection with the DB
         connect = DriverManager
-                .getConnection("jdbc:mysql://localhost/feedback?"
-                        + "user=sqluser&password=sqluserpw");
+                .getConnection("jdbc:mysql://"+ip, user, pw);
 
         // Statements allow to issue SQL queries to the database
         statement = connect.createStatement();
@@ -110,17 +113,18 @@ public class ChatServer {
         System.out.println("Connecting to Database...");
         try {
             connectToDatabase();
+            try {
+                while (true) {
+                    new Handler(listener.accept()).start();
+                }
+            } finally {
+                listener.close();
+            }
         } catch (Exception e){
+            System.out.println("Failed to connect to Database:\n"+e.getMessage());
             // do something
         } finally {
             close();
-        }
-        try {
-            while (true) {
-                new Handler(listener.accept()).start();
-            }
-        } finally {
-            listener.close();
         }
     }
 
