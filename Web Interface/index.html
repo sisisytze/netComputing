@@ -1,0 +1,17 @@
+<head>
+  <link rel="stylesheet" href="layout.css" type="text/css">
+</head>
+<body>
+	<div id="floating-panel">
+	  <button onclick="toggleHeatmap()">Toggle Heatmap</button>
+	  <button onclick="changeGradient()">Change gradient</button>
+	  <button onclick="changeRadius()">Change radius</button>
+	  <button onclick="changeOpacity()">Change opacity</button>
+	</div>
+	<div id="map"></div>
+	<!-- Replace the value of the key parameter with your own API key. -->
+	<script async defer
+			src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBgIwZrqSjRgMntzgF-1RiQ9nS5uCWGZEg&libraries=visualization&callback=initMap">
+	</script>
+	<script type="text/javascript" src="scripts.js"></script>
+</body>
