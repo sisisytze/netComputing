@@ -6,6 +6,7 @@ from uuid import getnode as get_mac
 
 # Connect the socket to the port where the server is listening
 server_address = ('localhost', 9001)
+routing_address = ('localhost', 9002)
 
 #s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 #s.connect(("8.8.8.8", 80))
