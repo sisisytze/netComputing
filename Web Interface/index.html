@@ -2,11 +2,20 @@
   <link rel="stylesheet" href="layout.css" type="text/css">
 </head>
 <body>
-	<div id="floating-panel">
-	  <button onclick="toggleHeatmap()">Toggle Heatmap</button>
-	  <button onclick="changeGradient()">Change gradient</button>
-	  <button onclick="changeRadius()">Change radius</button>
-	  <button onclick="changeOpacity()">Change opacity</button>
+	<div id="topbar">
+		<img src="EnviroStats.png"/>
+		<div class="dropdown">
+			<button onclick="toggleDropdown()" class="dropbtn">Cities</button>
+			  <div id="cityDropdown" class="dropdown-content">
+				<input type="text" placeholder="Search.." id="myInput" onkeyup="filterFunction()">
+				<a href="#groningen">Groningen</a>
+			  </div>
+		</div>
+    </div>	
+	<div id="legend">
+	  <div id="min">min</div>
+	  <div id="mid">mid</div>
+	  <div id="max">max</div>
 	</div>
 	<div id="map"></div>
 	<!-- Replace the value of the key parameter with your own API key. -->
