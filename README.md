@@ -2,13 +2,11 @@
 #### *For the course Net Computing*
 
 ## Introduction
-EnviroStats provides a public API to visualize data throughout the city. Sensors can send their measurements to one of our servers and then the data is visualized on an intereactive Google Map. At the moment we generate our own dummy data, for one sensor type, CO² levels. Adding more sensor types as the systems grows larger is easy. The system could be expanded for temperature data, moisture data, noise data, whatever the technology of sensors offers.
+EnviroStats provides a public API to visualize data throughout the city. Sensors can send their measurements to one of our servers and then the data is visualized on an interactive Google Map. At the moment we generate our own dummy data, for one sensor type, CO² levels. Adding more sensor types as the systems grows larger is easy. The system could be expanded for temperature data, moisture data, noise data, whatever the technology of sensors offers.
 
 Our web application displays the measurement data from our servers on a Google Map like this:
 
 [!DummyPollutionMap](https://github.com/sisisytze/netComputing/blob/master/@images/DummyPollutionMap.png?raw=true)
-
-*Note images werken niet vanwege de private repo*
 
 ## Technical README
 The system exists out of several components which are shown in the image below. 
@@ -17,12 +15,8 @@ The system exists out of several components which are shown in the image below.
 
 [!LogicalComponentDiagram](https://github.com/sisisytze/netComputing/blob/master/@images/LogicalComponentDiagram.png?raw=true)
 
-*Note images werken niet vanwege de private repo*
-
 ### System Example
 [!FourServerExampleSetup](https://github.com/sisisytze/netComputing/blob/master/@images/FourServerExampleSetup.png?raw=true)
-
-*Note images werken niet vanwege de private repo*
 
 In this example we have 1 routing server, 4 data servers (2 pairs), and 15 sensors.
 
@@ -49,5 +43,3 @@ Each data server needs to know what data server it is paired with, so that they 
 The table structure of our MySQL database is described in the following image:
 
 [!DatabaseDiagram](https://github.com/sisisytze/netComputing/blob/master/@images/DatabaseDiagram.png?raw=true)
-
-*Note images werken niet vanwege de private repo*
