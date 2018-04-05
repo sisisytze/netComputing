@@ -37,15 +37,16 @@ func (rs *routingServer) redirect(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, url, 300)
 }
 
-//
 func (rs *routingServer) connectDatabase(databasesLocation string) error {
 	var err error = nil
 
+	// This connects to the database
 	rs.database, err = sql.Open("mysql", databasesLocation)
 	if err != nil {
 		return errors.Wrap(err, "could not read in the databases")
 	}
 
+	// Connecting to a database doesn't proc a ping in golang, best practice to do it manually
 	err = rs.database.Ping()
 	if err != nil {
 		return errors.Wrapf(err, "could not connect to database with information: %s", databasesLocation)
@@ -118,11 +119,10 @@ func main() {
 	}
 
 	// These operations make sure the routing server refreshes its redirect servers every routingServer.waitTime
-	/*
 	routingServer.getServers()
 	ctx, cancel := context.WithCancel(context.Background())
 	go routingServer.refreshServers(ctx)
-*/
+
 	// This creates the server and everything that arrives at port routingServer.serverPort will proc the redirect function
 	server := http.Server{Addr: port}
 	http.HandleFunc("/", routingServer.redirect)
@@ -130,7 +130,7 @@ func main() {
 	// This starts a server and from here the program will serve all incoming requests
 	err = server.ListenAndServe()
 	if err != nil {
-		//cancel()
+		cancel()
 		<-time.After(time.Second * 2)
 		log.Fatalf("Could not start listen and server %v", err)
 	}
