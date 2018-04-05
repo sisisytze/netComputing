@@ -17,7 +17,7 @@ import (
 
 var (
 	evenQuerry   bool
-	servers map[int]serverInfo
+	servers      map[int]serverInfo
 	measurements map[time.Time][]Measurement //Used to cache the data.
 	databases    [][2]*sql.DB                // We have 2 databases wit duplicate data. Store one of each. If [x][0] fails use [x][1] (later we could base this on loadbalancers??)
 )
@@ -35,15 +35,15 @@ func main() {
 	flag.Parse()
 
 	/*
-	routingdb, err := sql.Open("mysql", databasesLocation)
-	if err != nil {
-		log.Printf("%v", err)
-	}
+		routingdb, err := sql.Open("mysql", databasesLocation)
+		if err != nil {
+			log.Printf("%v", err)
+		}
 
-	err = connectDatabases(routingdb)
-	if err != nil {
-		log.Fatalf("Could not read in the databases %v", err)
-	}*/
+		err = connectDatabases(routingdb)
+		if err != nil {
+			log.Fatalf("Could not read in the databases %v", err)
+		}*/
 
 	db1, err := sql.Open("mysql", "netcomp:envstat@tcp(94.23.200.26:3306)/db1")
 	if err != nil {
@@ -140,21 +140,19 @@ func getMeasurementsWithLocation(w http.ResponseWriter, r *http.Request) {
 	errorChannel := make(chan error)
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
-/*
-	urlEncodedValues := r.URL.Query()
-	timeUnparsed := urlEncodedValues.Get("time")
-	time := time.Unix()
-	long := urlEncodedValues.Get("long")
-	lat := urlEncodedValues.Get("lat")
-	zoom := urlEncodedValues.Get("zoom")
 
-WHERE            m1.at > ? AND
-				 m1.at < ? AND
-				 s1.longitude > ? AND
-				 s1.longitude < ? AND
-				 s1.latitude > ? AND
-				 s1.latitude > ?
-*/
+	urlEncodedValues := r.URL.Query()
+	sensorType := urlEncodedValues.Get("sensor_type")
+	log.Printf("sensor type: %s", sensorType)
+	/*
+		WHERE            m1.at > ? AND
+					 m1.at < ? AND
+					 s1.longitude > ? AND
+					 s1.longitude < ? AND
+					 s1.latitude > ? AND
+					 s1.latitude > ?
+	*/
+	// http://localhost:8080/api/get/measurements_with_location/?sensor_type="temperature"
 	for _, dbPair := range databases {
 		// from all the server pairs get the data in parallel
 		go func() {
@@ -167,20 +165,20 @@ WHERE            m1.at > ? AND
 				if dbPair[even] == nil {
 					even = (even + 1) % 2
 				}
+				/*				rows, err = dbPair[even].Query(`
+				SELECT ms.value, sn.latitude, sn.longitude, sn.uuid
+				FROM (sensor AS sn INNER JOIN measurement AS ms ON ms.sensor_uuid = sn.uuid) INNER JOIN sensortype AS st ON sn.sensor_type_id = st.id`)
+				*/
+
 				rows, err = dbPair[even].Query(`
-SELECT ms.value, sn.latitude, sn.longitude, sn.uuid
-FROM (sensor AS sn INNER JOIN measurement AS ms ON ms.sensor_uuid = sn.uuid) INNER JOIN sensortype AS st ON sn.sensor_type_id = st.id`)
-				/*rows, err = dbPair[even].Query(`
-     SELECT m2.value, s2.latitude, s2.longitude
-	 FROM measurement AS m2 JOIN sensor AS s2 ON m2.sensor_uuid = s2.uuid,  
+     SELECT m2.value, sn.latitude, sn.longitude, sn.uuid, st.name
+	 FROM (measurement AS m2 JOIN sensor AS sn ON m2.sensor_uuid = sn.uuid) INNER JOIN sensortype AS st ON st.id = sn.sensor_type_id,  
 	 (
-	     SELECT m1.uuid, MAX(m1.at) AS moment
-			 FROM measurement AS m1 INNER JOIN sensor AS s1 ON m1.sensor_uuid = s1.uuid
-			 
-			   
-			GROUP BY m1.sensor_uuid
+	    SELECT uuid, MAX(at) AS moment
+		FROM measurement 
+		GROUP BY sensor_uuid
 	 ) AS m3
- 	 WHERE m3.uuid = m2.uuid;`)*/
+ 	 WHERE 	m3.uuid = m2.uuid;`) //AND st.name=?;`, sensorType)
 				log.Printf("%v", err)
 				if err == nil {
 					break
@@ -190,7 +188,7 @@ FROM (sensor AS sn INNER JOIN measurement AS ms ON ms.sensor_uuid = sn.uuid) INN
 				defer rows.Close()
 			}
 			if err != nil {
-				errorChannel <- err
+				errorChannel <- errors.Wrap(err, "error getting querry")
 				return
 			}
 			sensorAlreadyPopulated := make(map[string]bool)
@@ -201,21 +199,21 @@ FROM (sensor AS sn INNER JOIN measurement AS ms ON ms.sensor_uuid = sn.uuid) INN
 				}
 				var uuid string
 				measurement := LocationMeasurement{}
-				err = rows.Scan(&measurement.Value, &measurement.Latitude, &measurement.Longtitude, &uuid)
+				err = rows.Scan(&measurement.Value, &measurement.Latitude, &measurement.Longtitude, &uuid, &sensorType)
 				if err != nil {
-
+					errorChannel <- errors.Wrap(err, "error scanning rows")
 				}
 				if _, ok := sensorAlreadyPopulated[uuid]; ok {
 					continue
 				}
-				log.Printf("sensor: %s: %v", uuid, measurement)
+				log.Printf("sensor: %s, sensor type: %s, %v", uuid, sensorType, measurement)
 				resultArray = append(resultArray, measurement)
 				sensorAlreadyPopulated[uuid] = true
 			}
 			select {
 			case responseChannel <- resultArray:
-			case <- time.After(time.Second * 1):
-			case <- ctx.Done():
+			case <-time.After(time.Second * 1):
+			case <-ctx.Done():
 			}
 		}()
 	}
@@ -227,12 +225,12 @@ FROM (sensor AS sn INNER JOIN measurement AS ms ON ms.sensor_uuid = sn.uuid) INN
 			results = append(results, response...)
 		case err := <-errorChannel:
 			log.Printf("failed databaseResponse, %v", err)
-		case <- time.After(time.Second * 2):
+		case <-time.After(time.Second * 2):
 			log.Printf("timeout waiting for server resonse")
 		}
 	}
 
-	if len(measurements) == 0 {
+	if len(results) == 0 {
 		log.Printf("database responses empty")
 		http.Error(w, "nothing to return", http.StatusNoContent)
 	}
