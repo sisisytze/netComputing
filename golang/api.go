@@ -16,51 +16,11 @@ import (
 )
 
 var (
-	evenQuerry   bool
-	servers      map[int]serverInfo
-	measurements map[time.Time][]Measurement //Used to cache the data.
-	databases    [][2]*sql.DB                // We have 2 databases wit duplicate data. Store one of each. If [x][0] fails use [x][1] (later we could base this on loadbalancers??)
+	evenQuerry   bool						// Determines to which of the paired databases the request will be send
+	servers      map[int]serverInfo 		// Contains the information of all other servers and databases
+	databases    [][2]*sql.DB               // We have 2 databases wit duplicate data. Store one of each. If [x][0] fails use [x][1] (later we could base this on loadbalancers??)
 )
-
-func main() {
-	var (
-		databasesLocation string
-		port              string
-		cacheTimeout      time.Duration
-	)
-	flag.StringVar(&databasesLocation, "dsn", "netcomp:envstat@tcp(94.23.200.26:3306)/dbrouting", "database to connect to username@ip:port/dbname")
-	flag.StringVar(&databasesLocation, "databases", "", "file name and location with the database addresses")
-	flag.StringVar(&port, "p", ":8081", "ip:port to listen to")
-	flag.DurationVar(&cacheTimeout, "timeout", time.Second*5, "time for measurements to stay in cache, should be entered as a number followed by m for minutes h for hours: 5m or 5h")
-	flag.Parse()
-
-	/*
-		routingdb, err := sql.Open("mysql", databasesLocation)
-		if err != nil {
-			log.Printf("%v", err)
-		}
-
-		err = connectDatabases(routingdb)
-		if err != nil {
-			log.Fatalf("Could not read in the databases %v", err)
-		}*/
-
-	db1, err := sql.Open("mysql", "netcomp:envstat@tcp(94.23.200.26:3306)/db1")
-	if err != nil {
-		log.Printf("%v", err)
-	}
-	databases = append(databases, [2]*sql.DB{db1, nil})
-
-	// HandlerFunc is a http functions. If there is a request at our base url + "/api/get/sensor" a new go routine running the function getMeasurements(..)
-	server := http.Server{Addr: port}
-	http.HandleFunc("/api/get/measurements_with_location", getMeasurementsWithLocation)
-	http.HandleFunc("/api/get/sensor_types", getSensorTypes)
-	err = server.ListenAndServe()
-	if err != nil {
-		log.Fatalf("Could not start listen and server %v", err)
-	}
-}
-
+// This function connects the api to all used databases
 func connectDatabases(routingdb *sql.DB) error {
 
 	rows, err := routingdb.Query(`
@@ -75,9 +35,10 @@ FROM server`)
 
 	databases = [][2]*sql.DB{}
 
+	// This makes a map where we can access information in O(1) this is great for checking searching the paired server
 	servers = make(map[int]serverInfo)
-
 	for rows.Next() {
+		log.Printf("do we even get here?")
 		var id int
 		server := serverInfo{}
 		err = rows.Scan(&id, &server.databaseName, &server.databasePort, &server.serverPort, &server.apiPort, &server.address)
@@ -87,6 +48,7 @@ FROM server`)
 		servers[id] = server
 	}
 
+	// This will be an array that also stores the pairs, this way the pairs won't be added twice (again a map for the quick index access)
 	alreadyAdded := make(map[int]bool)
 
 	for id, sv := range servers {
@@ -133,25 +95,29 @@ FROM server`)
 	return nil
 }
 
+// This function will return all the different sensor types that are in use
+// http://localhost:8080/api/get/sensorTypes"
 func getSensorTypes(w http.ResponseWriter, r *http.Request) {
 	even := 1
 	if evenQuerry {
 		even = 0
 	}
 
+	// These channels are used to communicate with the different go routines that are running for each server pair
 	responseChannel := make(chan []string)
 	errorChannel := make(chan error)
+	// This allows the parent to easily kill the child go routines
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
 
-	// http://localhost:8080/api/get/sensorTypes"
 	for _, dbPair := range databases {
-		// from all the server pairs get the data in parallel
+		// from all the server pairs get the data in go routines (parallel)
 		go func() {
 			var (
 				rows *sql.Rows
 				err  error
 			)
+			// This for loop will first try to query the longest idle server, but if that servers gives an error the pair will be queried instead
 			for range dbPair {
 				if dbPair[even] == nil {
 					even = (even + 1) % 2
@@ -181,7 +147,6 @@ func getSensorTypes(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					errorChannel <- errors.Wrap(err, "error scanning rows")
 				}
-				log.Printf(sensorType)
 				resultArray = append(resultArray, sensorType)
 			}
 			select {
@@ -224,8 +189,10 @@ func getSensorTypes(w http.ResponseWriter, r *http.Request) {
 		log.Printf("error marshalling response, %v", err)
 		return
 	}
-	w.Header().Add("Access-Control-Allow-Origin", "*")
-	w.Header().Add("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Write(jsonResponse)
 }
 
@@ -329,4 +296,36 @@ func getMeasurementsWithLocation(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Write(jsonResponse)
+}
+
+func main() {
+	var (
+		databasesLocation string
+		port              string
+		cacheTimeout      time.Duration
+	)
+	flag.StringVar(&databasesLocation, "dsn", "netcomp:envstat@tcp(94.23.200.26:3306)/dbrouting", "database to connect to username@ip:port/dbname")
+	flag.StringVar(&port, "p", ":8081", "ip:port to listen to")
+	flag.DurationVar(&cacheTimeout, "timeout", time.Second*5, "time for measurements to stay in cache, should be entered as a number followed by m for minutes h for hours: 5m or 5h")
+	flag.Parse()
+
+	// Connects to the routing database that knows all servers
+	routingdb, err := sql.Open("mysql", databasesLocation)
+	if err != nil {
+		log.Fatalf("couldnt connect to routing database: %v", err)
+	}
+
+	err = connectDatabases(routingdb)
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+
+	// HandlerFunc is a http functions. If there is a request at our base url + "/api/get/sensor" a new go routine running the function getMeasurements(..)
+	server := http.Server{Addr: port}
+	http.HandleFunc("/api/get/measurements_with_location", getMeasurementsWithLocation)
+	http.HandleFunc("/api/get/sensor_types", getSensorTypes)
+	err = server.ListenAndServe()
+	if err != nil {
+		log.Fatalf("Could not start listen and server %v", err)
+	}
 }
