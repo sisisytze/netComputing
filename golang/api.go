@@ -54,6 +54,7 @@ func main() {
 	// HandlerFunc is a http functions. If there is a request at our base url + "/api/get/sensor" a new go routine running the function getMeasurements(..)
 	server := http.Server{Addr: port}
 	http.HandleFunc("/api/get/measurements_with_location", getMeasurementsWithLocation)
+	http.HandleFunc("/api/get/sensor_types", getSensorTypes)
 	err = server.ListenAndServe()
 	if err != nil {
 		log.Fatalf("Could not start listen and server %v", err)
@@ -130,6 +131,102 @@ FROM server`)
 		}
 	}
 	return nil
+}
+
+func getSensorTypes(w http.ResponseWriter, r *http.Request) {
+	even := 1
+	if evenQuerry {
+		even = 0
+	}
+
+	responseChannel := make(chan []string)
+	errorChannel := make(chan error)
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	defer cancelFunc()
+
+	// http://localhost:8080/api/get/sensorTypes"
+	for _, dbPair := range databases {
+		// from all the server pairs get the data in parallel
+		go func() {
+			var (
+				rows *sql.Rows
+				err  error
+			)
+			for range dbPair {
+				if dbPair[even] == nil {
+					even = (even + 1) % 2
+				}
+				rows, err = dbPair[even].Query(`
+     SELECT st.name
+     FROM sensortype AS st;`)
+				if err == nil {
+					break
+				}
+			}
+			if rows != nil {
+				defer rows.Close()
+			}
+			if err != nil {
+				errorChannel <- errors.Wrap(err, "error getting querry")
+				return
+			}
+
+			resultArray := []string{}
+			for rows.Next() {
+				if ctx.Err() != nil {
+					return
+				}
+				var sensorType string
+				err = rows.Scan(&sensorType)
+				if err != nil {
+					errorChannel <- errors.Wrap(err, "error scanning rows")
+				}
+				log.Printf(sensorType)
+				resultArray = append(resultArray, sensorType)
+			}
+			select {
+			case responseChannel <- resultArray:
+			case <-time.After(time.Second * 1):
+			case <-ctx.Done():
+			}
+		}()
+	}
+
+	results := []string{}
+	for range databases {
+		select {
+		case response := <-responseChannel:
+			results = append(results, response...)
+		case err := <-errorChannel:
+			log.Printf("failed databaseResponse, %v", err)
+		case <-time.After(time.Second * 2):
+			log.Printf("timeout waiting for server resonse")
+		}
+	}
+
+	if len(results) == 0 {
+		log.Printf("database responses empty")
+		http.Error(w, "nothing to return", http.StatusNoContent)
+	}
+	uniqueSensorTypes := []string{}
+	uniqueSensorChecker := make(map[string]bool)
+	for _, sensorType := range results {
+		if _, ok := uniqueSensorChecker[sensorType]; ok {
+			continue
+		}
+		uniqueSensorChecker[sensorType] = true
+		uniqueSensorTypes = append(uniqueSensorTypes, sensorType)
+	}
+
+	cancelFunc()
+	jsonResponse, err := json.Marshal(uniqueSensorTypes)
+	if err != nil {
+		log.Printf("error marshalling response, %v", err)
+		return
+	}
+
+	w.Header().Add("Content-type", "application/json")
+	w.Write(jsonResponse)
 }
 
 func getMeasurementsWithLocation(w http.ResponseWriter, r *http.Request) {

@@ -37,12 +37,13 @@ func (rs *routingServer) redirect(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, url, 300)
 }
 
+//
 func (rs *routingServer) connectDatabase(databasesLocation string) error {
 	var err error = nil
 
 	rs.database, err = sql.Open("mysql", databasesLocation)
 	if err != nil {
-		return errors.Wrap(err, "Could not read in the databases")
+		return errors.Wrap(err, "could not read in the databases")
 	}
 
 	err = rs.database.Ping()
@@ -52,14 +53,6 @@ func (rs *routingServer) connectDatabase(databasesLocation string) error {
 
 	log.Printf("Connection with routing database established")
 
-/*
-	err = rs.createDatabase()
-	if err != nil {
-		return err
-	}
-
-	log.Printf("Succesfully created routing database+")
-*/
 	return nil
 }
 
@@ -78,56 +71,6 @@ func (rs *routingServer) refreshServers(ctx context.Context) {
 			}
 		}
 	}
-}
-
-func (rs *routingServer) createDatabase() error {
-
-	tx, err := rs.database.Begin()
-	if err != nil {
-		return errors.Wrap(err, "Could not start a transaction")
-	}
-	_, err = tx.Exec(`
-CREATE TABLE IF NOT EXISTS routingdb.server (
-  id INT NOT NULL,
-  database_name VARCHAR(45) NOT NULL,
-  database_port VARCHAR(4) NOT NULL DEFAULT '3306',
-  server_port VARCHAR(4) NOT NULL DEFAULT '8081',
-  api_port VARCHAR(4) NOT NULL DEFAULT '8080',
-  address VARCHAR(45) NOT NULL,
-  PRIMARY KEY (id));`)
-	if err != nil {
-		tx.Rollback()
-		return errors.Wrap(err, "could not create server table in routingDatabase")
-	}
-
-	_, err = tx.Exec(`CREATE TABLE IF NOT EXISTS routingdb.pair (
-  server_0 INT NOT NULL,
-  server_1 INT NOT NULL,
-  INDEX server_1_idx (server_1 ASC),
-  INDEX server_0_idx (server_0 ASC),
-  CONSTRAINT server_0
-    FOREIGN KEY (server_0)
-    REFERENCES routingdb.server (id)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
-  CONSTRAINT server_1
-    FOREIGN KEY (server_1)
-    REFERENCES routingdb.server (id)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION);
-`)
-	if err != nil {
-		tx.Rollback()
-		tx.Rollback()
-		return errors.Wrap(err, "could not create pair table in routingDatabase")
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // Gets all the servers from the routing database, maybe this call needs some protection
