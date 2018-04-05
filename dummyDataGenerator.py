@@ -81,8 +81,8 @@ def genData(locList, averageWeight, spread):
                 + str(round(random.uniform(averageWeight - spread, averageWeight + spread),2))
                 + "},")
                 
-genData(ringwegLocs, 60, 5)
-genData(parkLocs, 5, 5)
+genData(parkLocs, 60, 5)
+genData(ringwegLocs, 5, 5)
 genData(otherLocs, 30, 15)
 
 # {location: new google.maps.LatLng(53.2263633, 6.5444437), weight: 6.0},   

@@ -88,6 +88,13 @@ img {
 	height:100%;
 }
 
+.dropdownType {
+    position: absolute;
+    display: inline-block;
+	right:10%;
+	height:100%;
+}
+
 .dropdown-content {
     display: none;
     position: absolute;
