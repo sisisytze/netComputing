@@ -2,6 +2,9 @@
   <library name="amqp-client-4.0.2">
     <CLASSES>
       <root url="jar://$PROJECT_DIR$/lib/amqp-client-4.0.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/mysql-connector-java-5.1.46.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/slf4j-api-1.7.21.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/slf4j-simple-1.7.22.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

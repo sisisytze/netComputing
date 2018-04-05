@@ -121,8 +121,6 @@ public class ApplicationServer {
         preparedStatement.setString(1,sensorType);
         resultSet = preparedStatement.executeQuery();
 
-        int sensortypeid;
-
         if(!resultSet.next()){
             try {
                 preparedStatement = connect
@@ -140,6 +138,7 @@ public class ApplicationServer {
             }
         }
         return resultSet.getInt(1);
+        //return 0;
     }
 
     public static String getSensorUUID(String uuid, long mac, int sensortypeid, float latitude, float longitude) throws SQLException {
@@ -169,6 +168,8 @@ public class ApplicationServer {
                 System.out.println(e);
             }
         }
-        return resultSet.getString(1);
+        if(resultSet.next())
+            return resultSet.getString(1);
+        return null;
     }
 }
