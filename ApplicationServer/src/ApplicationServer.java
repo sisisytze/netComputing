@@ -4,6 +4,8 @@ import java.util.UUID;
 
 import com.rabbitmq.client.*;
 
+import static java.lang.Thread.sleep;
+
 public class ApplicationServer {
     private static java.sql.Connection connect = null;
     private static Statement statement = null;
@@ -29,7 +31,7 @@ public class ApplicationServer {
         statement = connect.createStatement();
     }
 
-    private static void insertData(long mac, float sensorTimestamp, float latitude, float longitude, String sensorType, float data) throws SQLException {
+    private static void insertData(long mac, float sensorTimestamp, float latitude, float longitude, String sensorType, float data) throws SQLException, InterruptedException {
         // get SensorType
         String uuid = UUID.randomUUID().toString();
         
@@ -101,6 +103,8 @@ public class ApplicationServer {
                                 Float.parseFloat(values[3]), values[4], Float.parseFloat(values[5]));
                     } catch (SQLException e) {
                         e.printStackTrace();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
                     }
                 }
             };
@@ -141,7 +145,7 @@ public class ApplicationServer {
         //return 0;
     }
 
-    public static String getSensorUUID(String uuid, long mac, int sensortypeid, float latitude, float longitude) throws SQLException {
+    public static String getSensorUUID(String uuid, long mac, int sensortypeid, float latitude, float longitude) throws SQLException, InterruptedException {
         preparedStatement = connect
                 .prepareStatement( "SELECT uuid FROM " + DATABASE + "." + SENSOR + " WHERE sensor_type_id=? AND mac_address=?");
         preparedStatement.setInt(1,sensortypeid);
@@ -159,6 +163,8 @@ public class ApplicationServer {
                 preparedStatement.setFloat(5, longitude);
                 preparedStatement.executeUpdate();
 
+                sleep(1000);
+
                 preparedStatement = connect
                         .prepareStatement( "SELECT uuid FROM " + DATABASE + "." + SENSOR + " WHERE sensor_type_id=? AND mac_address=?");
                 preparedStatement.setInt(1,sensortypeid);
@@ -168,8 +174,6 @@ public class ApplicationServer {
                 System.out.println(e);
             }
         }
-        if(resultSet.next())
-            return resultSet.getString(1);
-        return null;
+        return resultSet.getString(1);
     }
 }

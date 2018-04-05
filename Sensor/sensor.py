@@ -17,10 +17,10 @@ from uuid import getnode as get_mac
 while True:
     mac = str(get_mac())
     sensortimestamp = str(time.time())
-    latitude = str(389457.938457)
-    longitude = str(549457.938564)
-    sensortype = 'co2'
-    data = str(random.uniform(1.5, 1.9))    
+    latitude = str(53.240493)
+    longitude = str(6.536319)
+    sensortype = 'grade'
+    data = str(random.uniform(8.5, 9.9))    
 
     # Send data
     message =  mac + ";" + sensortimestamp + ";" + latitude + ";" + longitude + ";" + sensortype + ";" + data
