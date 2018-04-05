@@ -199,7 +199,7 @@ func getMeasurementsWithLocation(w http.ResponseWriter, r *http.Request) {
 				}
 				var uuid string
 				measurement := LocationMeasurement{}
-				err = rows.Scan(&measurement.Value, &measurement.Latitude, &measurement.Longtitude, &uuid, &sensorType)
+				err = rows.Scan(&measurement.Value, &measurement.Latitude, &measurement.Longitude, &uuid, &sensorType)
 				if err != nil {
 					errorChannel <- errors.Wrap(err, "error scanning rows")
 				}

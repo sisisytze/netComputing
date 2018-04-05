@@ -157,6 +157,21 @@ function getPolPoints() {
   ];
 }
 
+var url = "http://localhost:8080/api/get/measurements_with_location";
+
+function getDataPoints(){
+    var response;
+    var xhttp = new XMLHttpRequest();
+    xhttp.open("POST", url, true);
+    xhttp.setRequestHeader("Content-type", "application/json");
+    xhttp.send();
+    response = JSON.parse(xhttp.responseText);
+    
+    var list = [];
+    //for()
+    
+}
+
 function getTreePoints() {
   return [
     {location: new google.maps.LatLng(53.20586, 6.542687), weight: 55.06},
