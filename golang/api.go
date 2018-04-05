@@ -30,7 +30,7 @@ func main() {
 	)
 	flag.StringVar(&databasesLocation, "dsn", "netcomp:envstat@tcp(94.23.200.26:3306)/dbrouting", "database to connect to username@ip:port/dbname")
 	flag.StringVar(&databasesLocation, "databases", "", "file name and location with the database addresses")
-	flag.StringVar(&port, "p", ":8080", "ip:port to listen to")
+	flag.StringVar(&port, "p", ":8081", "ip:port to listen to")
 	flag.DurationVar(&cacheTimeout, "timeout", time.Second*5, "time for measurements to stay in cache, should be entered as a number followed by m for minutes h for hours: 5m or 5h")
 	flag.Parse()
 
@@ -54,6 +54,7 @@ func main() {
 	// HandlerFunc is a http functions. If there is a request at our base url + "/api/get/sensor" a new go routine running the function getMeasurements(..)
 	server := http.Server{Addr: port}
 	http.HandleFunc("/api/get/measurements_with_location", getMeasurementsWithLocation)
+	http.HandleFunc("/api/get/sensor_types", getSensorTypes)
 	err = server.ListenAndServe()
 	if err != nil {
 		log.Fatalf("Could not start listen and server %v", err)
@@ -105,7 +106,9 @@ FROM server`)
 		}
 
 		if sv.pair == nil {
-			databases = append(databases, [2]*sql.DB{db1, nil})
+			if db1 != nil {
+				databases = append(databases, [2]*sql.DB{db1, nil})
+			}
 			continue
 		}
 
@@ -130,6 +133,102 @@ FROM server`)
 	return nil
 }
 
+func getSensorTypes(w http.ResponseWriter, r *http.Request) {
+	even := 1
+	if evenQuerry {
+		even = 0
+	}
+
+	responseChannel := make(chan []string)
+	errorChannel := make(chan error)
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	defer cancelFunc()
+
+	// http://localhost:8080/api/get/sensorTypes"
+	for _, dbPair := range databases {
+		// from all the server pairs get the data in parallel
+		go func() {
+			var (
+				rows *sql.Rows
+				err  error
+			)
+			for range dbPair {
+				if dbPair[even] == nil {
+					even = (even + 1) % 2
+				}
+				rows, err = dbPair[even].Query(`
+     SELECT st.name
+     FROM sensortype AS st;`)
+				if err == nil {
+					break
+				}
+			}
+			if rows != nil {
+				defer rows.Close()
+			}
+			if err != nil {
+				errorChannel <- errors.Wrap(err, "error getting querry")
+				return
+			}
+
+			resultArray := []string{}
+			for rows.Next() {
+				if ctx.Err() != nil {
+					return
+				}
+				var sensorType string
+				err = rows.Scan(&sensorType)
+				if err != nil {
+					errorChannel <- errors.Wrap(err, "error scanning rows")
+				}
+				log.Printf(sensorType)
+				resultArray = append(resultArray, sensorType)
+			}
+			select {
+			case responseChannel <- resultArray:
+			case <-time.After(time.Second * 1):
+			case <-ctx.Done():
+			}
+		}()
+	}
+
+	results := []string{}
+	for range databases {
+		select {
+		case response := <-responseChannel:
+			results = append(results, response...)
+		case err := <-errorChannel:
+			log.Printf("failed databaseResponse, %v", err)
+		case <-time.After(time.Second * 2):
+			log.Printf("timeout waiting for server resonse")
+		}
+	}
+
+	if len(results) == 0 {
+		log.Printf("database responses empty")
+		http.Error(w, "nothing to return", http.StatusNoContent)
+	}
+	uniqueSensorTypes := []string{}
+	uniqueSensorChecker := make(map[string]bool)
+	for _, sensorType := range results {
+		if _, ok := uniqueSensorChecker[sensorType]; ok {
+			continue
+		}
+		uniqueSensorChecker[sensorType] = true
+		uniqueSensorTypes = append(uniqueSensorTypes, sensorType)
+	}
+
+	cancelFunc()
+	jsonResponse, err := json.Marshal(uniqueSensorTypes)
+	if err != nil {
+		log.Printf("error marshalling response, %v", err)
+		return
+	}
+
+	w.Header().Add("Content-type", "application/json")
+	w.Write(jsonResponse)
+}
+
 func getMeasurementsWithLocation(w http.ResponseWriter, r *http.Request) {
 	even := 1
 	if evenQuerry {
@@ -143,15 +242,6 @@ func getMeasurementsWithLocation(w http.ResponseWriter, r *http.Request) {
 
 	urlEncodedValues := r.URL.Query()
 	sensorType := urlEncodedValues.Get("sensor_type")
-	log.Printf("sensor type: %s", sensorType)
-	/*
-		WHERE            m1.at > ? AND
-					 m1.at < ? AND
-					 s1.longitude > ? AND
-					 s1.longitude < ? AND
-					 s1.latitude > ? AND
-					 s1.latitude > ?
-	*/
 	// http://localhost:8080/api/get/measurements_with_location/?sensor_type="temperature"
 	for _, dbPair := range databases {
 		// from all the server pairs get the data in parallel
@@ -161,15 +251,9 @@ func getMeasurementsWithLocation(w http.ResponseWriter, r *http.Request) {
 				err  error
 			)
 			for range dbPair {
-				log.Printf("do we get here?")
 				if dbPair[even] == nil {
 					even = (even + 1) % 2
 				}
-				/*				rows, err = dbPair[even].Query(`
-				SELECT ms.value, sn.latitude, sn.longitude, sn.uuid
-				FROM (sensor AS sn INNER JOIN measurement AS ms ON ms.sensor_uuid = sn.uuid) INNER JOIN sensortype AS st ON sn.sensor_type_id = st.id`)
-				*/
-
 				rows, err = dbPair[even].Query(`
      SELECT m2.value, sn.latitude, sn.longitude, sn.uuid, st.name
 	 FROM (measurement AS m2 JOIN sensor AS sn ON m2.sensor_uuid = sn.uuid) INNER JOIN sensortype AS st ON st.id = sn.sensor_type_id,  
@@ -178,7 +262,7 @@ func getMeasurementsWithLocation(w http.ResponseWriter, r *http.Request) {
 		FROM measurement 
 		GROUP BY sensor_uuid
 	 ) AS m3
- 	 WHERE 	m3.uuid = m2.uuid;`) //AND st.name=?;`, sensorType)
+ 	 WHERE 	m3.uuid = m2.uuid AND st.name=?;`, sensorType)
 				log.Printf("%v", err)
 				if err == nil {
 					break
@@ -191,7 +275,7 @@ func getMeasurementsWithLocation(w http.ResponseWriter, r *http.Request) {
 				errorChannel <- errors.Wrap(err, "error getting querry")
 				return
 			}
-			sensorAlreadyPopulated := make(map[string]bool)
+
 			resultArray := []LocationMeasurement{}
 			for rows.Next() {
 				if ctx.Err() != nil {
@@ -203,12 +287,9 @@ func getMeasurementsWithLocation(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					errorChannel <- errors.Wrap(err, "error scanning rows")
 				}
-				if _, ok := sensorAlreadyPopulated[uuid]; ok {
-					continue
-				}
+
 				log.Printf("sensor: %s, sensor type: %s, %v", uuid, sensorType, measurement)
 				resultArray = append(resultArray, measurement)
-				sensorAlreadyPopulated[uuid] = true
 			}
 			select {
 			case responseChannel <- resultArray:
