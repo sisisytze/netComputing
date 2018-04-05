@@ -167,7 +167,7 @@ func getSensorTypes(w http.ResponseWriter, r *http.Request) {
 				defer rows.Close()
 			}
 			if err != nil {
-				errorChannel <- errors.Wrap(err, "error getting querry")
+				errorChannel <- errors.Wrap(err, "error getting query")
 				return
 			}
 
@@ -224,11 +224,12 @@ func getSensorTypes(w http.ResponseWriter, r *http.Request) {
 		log.Printf("error marshalling response, %v", err)
 		return
 	}
-
-	w.Header().Add("Content-type", "application/json")
+	w.Header().Add("Access-Control-Allow-Origin", "*")
+	w.Header().Add("Content-Type", "application/json")
 	w.Write(jsonResponse)
 }
 
+// http://localhost:8081/api/get/measurements_with_location/?sensor_type=CO2
 func getMeasurementsWithLocation(w http.ResponseWriter, r *http.Request) {
 	even := 1
 	if evenQuerry {
@@ -242,7 +243,7 @@ func getMeasurementsWithLocation(w http.ResponseWriter, r *http.Request) {
 
 	urlEncodedValues := r.URL.Query()
 	sensorType := urlEncodedValues.Get("sensor_type")
-	// http://localhost:8080/api/get/measurements_with_location/?sensor_type="temperature"
+
 	for _, dbPair := range databases {
 		// from all the server pairs get the data in parallel
 		go func() {
@@ -283,7 +284,7 @@ func getMeasurementsWithLocation(w http.ResponseWriter, r *http.Request) {
 				}
 				var uuid string
 				measurement := LocationMeasurement{}
-				err = rows.Scan(&measurement.Value, &measurement.Latitude, &measurement.Longitude, &uuid, &sensorType)
+				err = rows.Scan(&measurement.Value, &measurement.Latitude, &measurement.Longtitude, &uuid, &sensorType)
 				if err != nil {
 					errorChannel <- errors.Wrap(err, "error scanning rows")
 				}
@@ -323,6 +324,9 @@ func getMeasurementsWithLocation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Add("Content-type", "application/json")
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Write(jsonResponse)
 }

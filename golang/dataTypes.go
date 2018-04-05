@@ -10,7 +10,7 @@ type Sensor struct {
 	SensorID int `json:"sensor_id"`
 	MAC string `json:"mac_address"`
 	Latitude string `json:"latitude"`
-	Longitude string `json:"longitude"`
+	Longtitude string `json:"longtitude"`
 	SensorType string `json:"sensor_type"`	
 }
 
@@ -19,13 +19,13 @@ type Measurement struct {
 	Timestamp time.Time `json:"timeStamp"`
 	SensorData float64 `json:"data"`
 	Latitude string `json:"latitude"`
-	Longitude string `json:"longitude"`
+	Longtitude string `json:"longtitude"`
 }
 
 type LocationMeasurement struct {
 	Value float32 `json:"value"`
 	Latitude float32 `json:"latitude"`
-	Longitude float32 `json:longitude`
+	Longtitude float32 `json:longtitude`
 }
 
 type serverInfo struct {

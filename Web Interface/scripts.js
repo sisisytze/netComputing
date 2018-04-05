@@ -93,6 +93,7 @@ function toggleHeatmapTree() {
 }
 
 function getPolPoints() {
+	getDataPoints()
   return [
     {location: new google.maps.LatLng(53.203246, 6.564907), weight: 58.1},
     {location: new google.maps.LatLng(53.205686, 6.57557), weight: 62.36},
@@ -157,19 +158,15 @@ function getPolPoints() {
   ];
 }
 
-var url = "http://localhost:8080/api/get/measurements_with_location";
-
 function getDataPoints(){
+  	var url = "http://localhost:8081/api/get/measurements_with_location?sensor_type=CO2";
     var response;
     var xhttp = new XMLHttpRequest();
-    xhttp.open("POST", url, true);
+    xhttp.open("GET", url, true);
     xhttp.setRequestHeader("Content-type", "application/json");
     xhttp.send();
     response = JSON.parse(xhttp.responseText);
-    
-    var list = [];
-    //for()
-    
+    console.log(response);  
 }
 
 function getTreePoints() {
