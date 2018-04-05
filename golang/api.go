@@ -95,7 +95,7 @@ FROM server`)
 	return nil
 }
 
-// This function
+// This function will return all the different sensor types that are in use
 // http://localhost:8080/api/get/sensorTypes"
 func getSensorTypes(w http.ResponseWriter, r *http.Request) {
 	even := 1
@@ -103,13 +103,15 @@ func getSensorTypes(w http.ResponseWriter, r *http.Request) {
 		even = 0
 	}
 
+	// These channels are used to communicate with the different go routines that are running for each server pair
 	responseChannel := make(chan []string)
 	errorChannel := make(chan error)
+	// This allows the parent to easily kill the child go routines
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
 
 	for _, dbPair := range databases {
-		// from all the server pairs get the data in parallel
+		// from all the server pairs get the data in go routines (parallel)
 		go func() {
 			var (
 				rows *sql.Rows
@@ -310,7 +312,7 @@ func main() {
 	// Connects to the routing database that knows all servers
 	routingdb, err := sql.Open("mysql", databasesLocation)
 	if err != nil {
-		log.Fatalf("couldnt connect to routingd database: %v", err)
+		log.Fatalf("couldnt connect to routing database: %v", err)
 	}
 
 	err = connectDatabases(routingdb)
