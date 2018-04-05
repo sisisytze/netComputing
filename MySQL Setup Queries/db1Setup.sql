@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS `db1`.`measurement` (
   `at` DATETIME NOT NULL,
   PRIMARY KEY (`uuid`),
   INDEX `sensor_idx` (`sensor_uuid` ASC),
-  CONSTRAINT `sensor`
+  CONSTRAINT `sensor_measure`
     FOREIGN KEY (`sensor_uuid`)
     REFERENCES `db1`.`sensor` (`uuid`)
     ON DELETE NO ACTION
@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS `db1`.`sync_sensor` (
   `sensor_uuid` VARCHAR(36) NOT NULL,
   PRIMARY KEY (`id`),
   INDEX `sensor_idx` (`sensor_uuid` ASC),
-  CONSTRAINT `sensor`
+  CONSTRAINT `sensor_sync`
     FOREIGN KEY (`sensor_uuid`)
     REFERENCES `db1`.`sensor` (`uuid`)
     ON DELETE NO ACTION
