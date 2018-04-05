@@ -119,7 +119,7 @@ public class ApplicationServer {
         }
     }
 
-    public static int getSensorTypeId(String sensorType) throws SQLException{
+    public static int getSensorTypeId(String sensorType) throws SQLException, InterruptedException {
         preparedStatement = connect
                 .prepareStatement( "SELECT id FROM " + DATABASE + "." + SENSORTYPE + " WHERE name=?");
         preparedStatement.setString(1,sensorType);
@@ -132,6 +132,8 @@ public class ApplicationServer {
                 preparedStatement.setString(1, sensorType);
                 preparedStatement.setInt(2, 9);
                 preparedStatement.executeUpdate();
+
+                sleep(1000);
 
                 preparedStatement = connect
                         .prepareStatement( "SELECT id FROM " + DATABASE + "." + SENSORTYPE + " WHERE name=?");

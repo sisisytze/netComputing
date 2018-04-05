@@ -88,7 +88,6 @@ def genData(locList, averageWeight, spread):
         channel.basic_publish(exchange='',routing_key='sensor_data',body=message)    
         connection.close() 
 
-
 genData(ringwegLocs, 60, 5)
 genData(parkLocs, 5, 5)
 genData(otherLocs, 30, 15)

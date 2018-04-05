@@ -4,6 +4,8 @@
 
 var map, heatmap;
 
+var mapData;
+
 var gradient = [
 "rgba(102, 255, 255, 1)",
 "rgba(102, 255, 128, 1)",
@@ -47,42 +49,32 @@ function filterFunction() {
 }
 
 function initMap() {
+  mapData = getPolPoints();//new google.maps.MVCArray([]);
   map = new google.maps.Map(document.getElementById('map'), {
     zoom: 14,
     center: {lat: 53.2245534, lng: 6.571995},
     mapTypeId: 'roadmap'
   });
 
-  heatmapPol = new google.maps.visualization.HeatmapLayer({
-    data: getPolPoints(),
-    map: map
+  heatmap = new google.maps.visualization.HeatmapLayer({
+    data: mapData
   });
-  heatmapTree = new google.maps.visualization.HeatmapLayer({
-    data: getTreePoints(),
-    map: map
-  });
-  heatmapPol.set('radius', 144);
-  heatmapTree.set('radius', 144);
-  heatmapPol.set('gradient', gradient);
-  heatmapTree.set('gradient', gradient);
+  heatmap.setMap(map);
+  
+  getDataPoints();
+  
+  heatmap.set('radius', 144);
+  heatmap.set('gradient', gradient);
   
   var opt = { minZoom: 8, maxZoom: 16 };
   map.setOptions(opt);
   
-  heatmapPol.set('maxIntensity', 100);
-  heatmapTree.set('maxIntensity', 100);
+  heatmap.set('maxIntensity', 100);
   
   map.addListener('zoom_changed', function() {
     zoomLevel = map.getZoom();
-    heatmapPol.set('radius', 9 * Math.pow(2,zoomLevel - 10));
-    heatmapTree.set('radius', 9 * Math.pow(2,zoomLevel - 10));
+    heatmap.set('radius', 9 * Math.pow(2,zoomLevel - 10));
   });
-  toggleHeatmapTree();
-}
-
-function toggleHeatmaps() {
-  toggleHeatmapTree();
-  toggleHeatmapPol();
 }
 
 function toggleHeatmapPol() {
@@ -93,7 +85,6 @@ function toggleHeatmapTree() {
 }
 
 function getPolPoints() {
-	getDataPoints()
   return [
     {location: new google.maps.LatLng(53.203246, 6.564907), weight: 58.1},
     {location: new google.maps.LatLng(53.205686, 6.57557), weight: 62.36},
@@ -159,18 +150,39 @@ function getPolPoints() {
 }
 
 function getDataPoints(){
-  	var url = "http://localhost:8081/api/get/measurements_with_location?sensor_type=CO2";
-    var response;
+    var points = [];
+  	var url = 'http://localhost:8081/api/get/measurements_with_location?sensor_type=CO2';
+    /*var response;
     var xhttp = new XMLHttpRequest();
     xhttp.open("GET", url, true);
     xhttp.setRequestHeader("Content-type", "application/json");
     xhttp.send();
     response = JSON.parse(xhttp.responseText);
-    console.log(response);  
+    console.log(response); */
+    var request = new XMLHttpRequest();
+
+    request.open('GET', url, true);
+    request.onload = function () {
+
+      // Begin accessing JSON data here
+      var data = JSON.parse(this.response);
+
+      if (request.status >= 200 && request.status < 400) {
+        data.forEach(entry => {
+          //console.log(entry.value);
+          points.push({location: new google.maps.LatLng(entry.lattitude, entry.Longtitude), weight: entry.value});
+        })
+        return points;
+      } else {
+        console.log('error');
+      }
+    }
+
+    request.send();
 }
 
 function getTreePoints() {
-  return [
+  mapData = [
     {location: new google.maps.LatLng(53.20586, 6.542687), weight: 55.06},
     {location: new google.maps.LatLng(53.203571, 6.540241), weight: 62.51},
     {location: new google.maps.LatLng(53.199637, 6.537838), weight: 57.63},
