@@ -53,38 +53,43 @@ function initMap() {
     mapTypeId: 'roadmap'
   });
 
-  heatmap = new google.maps.visualization.HeatmapLayer({
+  heatmapPol = new google.maps.visualization.HeatmapLayer({
     data: getPolPoints(),
     map: map
   });
-  heatmap.set('radius', 144);
-  heatmap.set('gradient', gradient);
+  heatmapTree = new google.maps.visualization.HeatmapLayer({
+    data: getTreePoints(),
+    map: map
+  });
+  heatmapPol.set('radius', 144);
+  heatmapTree.set('radius', 144);
+  heatmapPol.set('gradient', gradient);
+  heatmapTree.set('gradient', gradient);
   
   var opt = { minZoom: 8, maxZoom: 16 };
   map.setOptions(opt);
   
-  heatmap.set('maxIntensity', 100);
+  heatmapPol.set('maxIntensity', 100);
+  heatmapTree.set('maxIntensity', 100);
   
   map.addListener('zoom_changed', function() {
     zoomLevel = map.getZoom();
-    heatmap.set('radius', 9 * Math.pow(2,zoomLevel - 10));
+    heatmapPol.set('radius', 9 * Math.pow(2,zoomLevel - 10));
+    heatmapTree.set('radius', 9 * Math.pow(2,zoomLevel - 10));
   });
+  toggleHeatmapTree();
 }
 
-function toggleHeatmap() {
-  heatmap.setMap(heatmap.getMap() ? null : map);
+function toggleHeatmaps() {
+  toggleHeatmapTree();
+  toggleHeatmapPol();
 }
 
-function setHeatmapTreeData(){
-    heatmap.data = getTreePoints();
+function toggleHeatmapPol() {
+  heatmapPol.setMap(heatmapPol.getMap() ? null : map);
 }
-
-function setHeatmapPolData(){
-    heatmap.data = getPolPoints();
-}
-
-function changeOpacity() {
-  heatmap.set('opacity', heatmap.get('opacity') ? null : 0.2);
+function toggleHeatmapTree() {
+  heatmapTree.setMap(heatmapTree.getMap() ? null : map);
 }
 
 function getPolPoints() {
