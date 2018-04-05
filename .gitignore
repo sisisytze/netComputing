@@ -1,2 +1,6 @@
 
 *.class
+
+ApplicationServer/\.idea/workspace\.xml
+
+Web Interface/npm/*
