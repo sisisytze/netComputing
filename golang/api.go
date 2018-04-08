@@ -38,7 +38,6 @@ FROM server`)
 	// This makes a map where we can access information in O(1) this is great for checking searching the paired server
 	servers = make(map[int]serverInfo)
 	for rows.Next() {
-		log.Printf("do we even get here?")
 		var id int
 		server := serverInfo{}
 		err = rows.Scan(&id, &server.databaseName, &server.databasePort, &server.serverPort, &server.apiPort, &server.address)
@@ -231,7 +230,6 @@ func getMeasurementsWithLocation(w http.ResponseWriter, r *http.Request) {
 		GROUP BY sensor_uuid
 	 ) AS m3
  	 WHERE 	m3.uuid = m2.uuid AND st.name=?;`, sensorType)
-				log.Printf("%v", err)
 				if err == nil {
 					break
 				}
@@ -255,8 +253,6 @@ func getMeasurementsWithLocation(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					errorChannel <- errors.Wrap(err, "error scanning rows")
 				}
-
-				log.Printf("sensor: %s, sensor type: %s, %v", uuid, sensorType, measurement)
 				resultArray = append(resultArray, measurement)
 			}
 			select {
@@ -303,7 +299,9 @@ func main() {
 		databasesLocation string
 		port              string
 		cacheTimeout      time.Duration
+		debug bool
 	)
+	flag.BoolVar(&debug, "debug", false, "if debug mode should be active")
 	flag.StringVar(&databasesLocation, "dsn", "netcomp:envstat@tcp(94.23.200.26:3306)/dbrouting", "database to connect to username@ip:port/dbname")
 	flag.StringVar(&port, "p", ":8081", "ip:port to listen to")
 	flag.DurationVar(&cacheTimeout, "timeout", time.Second*5, "time for measurements to stay in cache, should be entered as a number followed by m for minutes h for hours: 5m or 5h")
@@ -315,7 +313,20 @@ func main() {
 		log.Fatalf("couldnt connect to routing database: %v", err)
 	}
 
-	err = connectDatabases(routingdb)
+
+	if debug {
+		db1, err := sql.Open("mysql", "netcomp:envstat@tcp(94.23.200.26:3306)/db1")
+		if err != nil {
+			log.Fatalf("%v", err)
+		}
+		databases = [][2]*sql.DB{{db1, nil}}
+		err = databases[0][0].Ping()
+		if err != nil {
+			log.Fatalf("%v", err)
+		}
+	} else {
+		err = connectDatabases(routingdb)
+	}
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
