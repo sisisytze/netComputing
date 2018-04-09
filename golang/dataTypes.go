@@ -23,7 +23,7 @@ type Measurement struct {
 }
 
 type LocationMeasurement struct {
-	Value float32 `json:"value"`
+	Value float32 `json:"measurement_value"`
 	Latitude float32 `json:"latitude"`
 	Longtitude float32 `json:longtitude`
 }

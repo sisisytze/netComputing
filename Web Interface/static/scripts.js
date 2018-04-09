@@ -61,8 +61,6 @@ function initMap() {
   });
   heatmap.setMap(map);
   
-  getDataPoints();
-  
   heatmap.set('radius', 144);
   heatmap.set('gradient', gradient);
   
@@ -84,164 +82,45 @@ function toggleHeatmapTree() {
   heatmapTree.setMap(heatmapTree.getMap() ? null : map);
 }
 
-function getPolPoints() {
-  return [
-    {location: new google.maps.LatLng(53.203246, 6.564907), weight: 58.1},
-    {location: new google.maps.LatLng(53.205686, 6.57557), weight: 62.36},
-    {location: new google.maps.LatLng(53.210628, 6.586484), weight: 62.52},
-    {location: new google.maps.LatLng(53.213608, 6.597814), weight: 60.45},
-    {location: new google.maps.LatLng(53.217179, 6.609401), weight: 56.89},
-    {location: new google.maps.LatLng(53.220467, 6.615795), weight: 64.26},
-    {location: new google.maps.LatLng(53.224166, 6.613649), weight: 61.87},
-    {location: new google.maps.LatLng(53.229355, 6.61013), weight: 62.48},
-    {location: new google.maps.LatLng(53.23686, 6.593625), weight: 62.3},
-    {location: new google.maps.LatLng(53.241534, 6.585857), weight: 64.87},
-    {location: new google.maps.LatLng(53.24631, 6.581737), weight: 56.29},
-    {location: new google.maps.LatLng(53.248903, 6.576501), weight: 60.49},
-    {location: new google.maps.LatLng(53.246745, 6.572167), weight: 64.88},
-    {location: new google.maps.LatLng(53.240735, 6.568562), weight: 64.92},
-    {location: new google.maps.LatLng(53.238346, 6.561138), weight: 61.57},
-    {location: new google.maps.LatLng(53.237575, 6.548564), weight: 64.66},
-    {location: new google.maps.LatLng(53.235956, 6.539037), weight: 57.28},
-    {location: new google.maps.LatLng(53.234491, 6.528265), weight: 57.5},
-    {location: new google.maps.LatLng(53.230483, 6.531441), weight: 64.86},
-    {location: new google.maps.LatLng(53.226757, 6.534488), weight: 55.95},
-    {location: new google.maps.LatLng(53.222306, 6.538189), weight: 58.64},
-    {location: new google.maps.LatLng(53.213137, 6.541998), weight: 55.8},
-    {location: new google.maps.LatLng(53.207585, 6.548779), weight: 58.37},
-    {location: new google.maps.LatLng(53.202623, 6.552298), weight: 59.74},
-    {location: new google.maps.LatLng(53.234868, 6.603167), weight: 57.77},
-    {location: new google.maps.LatLng(53.21787, 6.539329), weight: 61.25},
-    {location: new google.maps.LatLng(53.202519, 6.559937), weight: 55.42},
-    {location: new google.maps.LatLng(53.208011, 6.580399), weight: 61.57},
-    {location: new google.maps.LatLng(53.21297, 6.592201), weight: 56.54},
-    {location: new google.maps.LatLng(53.215359, 6.604131), weight: 63.95},
-    {location: new google.maps.LatLng(53.204229, 6.569756), weight: 63.84},
-    {location: new google.maps.LatLng(53.20586, 6.542687), weight: 0.65},
-    {location: new google.maps.LatLng(53.203571, 6.540241), weight: 1.98},
-    {location: new google.maps.LatLng(53.199637, 6.537838), weight: 3.9},
-    {location: new google.maps.LatLng(53.218449, 6.532525), weight: 2.24},
-    {location: new google.maps.LatLng(53.224975, 6.516904), weight: 3.79},
-    {location: new google.maps.LatLng(53.241645, 6.543769), weight: 2.82},
-    {location: new google.maps.LatLng(53.240437, 6.551451), weight: 3.36},
-    {location: new google.maps.LatLng(53.235017, 6.570892), weight: 3.29},
-    {location: new google.maps.LatLng(53.228697, 6.582393), weight: 0.99},
-    {location: new google.maps.LatLng(53.228131, 6.548704), weight: 0.83},
-    {location: new google.maps.LatLng(53.226409, 6.558274), weight: 1.82},
-    {location: new google.maps.LatLng(53.224301, 6.555227), weight: 2.3},
-    {location: new google.maps.LatLng(53.221371, 6.554583), weight: 3.95},
-    {location: new google.maps.LatLng(53.232252, 6.593819), weight: 3.61},
-    {location: new google.maps.LatLng(53.192011, 6.540175), weight: 3.22},
-    {location: new google.maps.LatLng(53.195422, 6.547616), weight: 1.83},
-    {location: new google.maps.LatLng(53.22675, 6.586754), weight: 1.29},
-    {location: new google.maps.LatLng(53.221456, 6.553623), weight: 2.78},
-    {location: new google.maps.LatLng(53.229756, 6.546128), weight: 22.32},
-    {location: new google.maps.LatLng(53.210355, 6.562007), weight: 44.57},
-    {location: new google.maps.LatLng(53.232671, 6.557447), weight: 33.12},
-    {location: new google.maps.LatLng(53.234489, 6.580317), weight: 19.88},
-    {location: new google.maps.LatLng(53.226191, 6.59817), weight: 22.53},
-    {location: new google.maps.LatLng(53.220229, 6.590316), weight: 23.44},
-    {location: new google.maps.LatLng(53.214806, 6.557443), weight: 39.66},
-    {location: new google.maps.LatLng(53.213931, 6.573579), weight: 41.71},
-    {location: new google.maps.LatLng(53.227369, 6.570789), weight: 20.89},
-    {location: new google.maps.LatLng(53.222538, 6.56654), weight: 23.19},
-    {location: new google.maps.LatLng(53.221972, 6.578428), weight: 32.66}
-  ];
+function Get(yourUrl){
+    var Httpreq = new XMLHttpRequest(); // a new request
+    Httpreq.open("GET",yourUrl,false);
+    Httpreq.send(null);
+    return Httpreq;
 }
 
-function getDataPoints(){
-    var points = [];
-  	var url = 'http://localhost:8081/api/get/measurements_with_location?sensor_type=CO2';
-    /*var response;
-    var xhttp = new XMLHttpRequest();
-    xhttp.open("GET", url, true);
-    xhttp.setRequestHeader("Content-type", "application/json");
-    xhttp.send();
-    response = JSON.parse(xhttp.responseText);
-    console.log(response); */
-    var request = new XMLHttpRequest();
+function getPolPoints() {
+    var response = Get('http://localhost:8081/api/get/measurements_with_location?sensor_type=CO2')
+    var maps = [];
+    if (response.status != 200) {
+        return maps
+    }
+    var jsonData = JSON.parse(response.responseText);
 
-    request.open('GET', url, true);
-    request.onload = function () {
+    for (var i = 0; i < jsonData.length; i++) {
+        var row = jsonData[i];
 
-      // Begin accessing JSON data here
-      var data = JSON.parse(this.response);
-
-      if (request.status >= 200 && request.status < 400) {
-        data.forEach(entry => {
-          //console.log(entry.value);
-          points.push({location: new google.maps.LatLng(entry.lattitude, entry.Longtitude), weight: entry.value});
-        })
-        return points;
-      } else {
-        console.log('error');
-      }
+        maps.push({location: new google.maps.LatLng(row.Longtitude, row.latitude), weight: row.measurement_value})
     }
 
-    request.send();
+
+    return maps;
 }
 
-function getTreePoints() {
-  mapData = [
-    {location: new google.maps.LatLng(53.20586, 6.542687), weight: 55.06},
-    {location: new google.maps.LatLng(53.203571, 6.540241), weight: 62.51},
-    {location: new google.maps.LatLng(53.199637, 6.537838), weight: 57.63},
-    {location: new google.maps.LatLng(53.218449, 6.532525), weight: 60.85},
-    {location: new google.maps.LatLng(53.224975, 6.516904), weight: 61.92},
-    {location: new google.maps.LatLng(53.241645, 6.543769), weight: 61.35},
-    {location: new google.maps.LatLng(53.240437, 6.551451), weight: 58.26},
-    {location: new google.maps.LatLng(53.235017, 6.570892), weight: 61.36},
-    {location: new google.maps.LatLng(53.228697, 6.582393), weight: 57.53},
-    {location: new google.maps.LatLng(53.228131, 6.548704), weight: 60.13},
-    {location: new google.maps.LatLng(53.226409, 6.558274), weight: 63.87},
-    {location: new google.maps.LatLng(53.224301, 6.555227), weight: 60.21},
-    {location: new google.maps.LatLng(53.221371, 6.554583), weight: 61.4},
-    {location: new google.maps.LatLng(53.232252, 6.593819), weight: 55.44},
-    {location: new google.maps.LatLng(53.192011, 6.540175), weight: 58.81},
-    {location: new google.maps.LatLng(53.195422, 6.547616), weight: 60.7},
-    {location: new google.maps.LatLng(53.22675, 6.586754), weight: 59.49},
-    {location: new google.maps.LatLng(53.221456, 6.553623), weight: 59.3},
-    {location: new google.maps.LatLng(53.203246, 6.564907), weight: 3.5},
-    {location: new google.maps.LatLng(53.205686, 6.57557), weight: 0.96},
-    {location: new google.maps.LatLng(53.210628, 6.586484), weight: 5.52},
-    {location: new google.maps.LatLng(53.213608, 6.597814), weight: 8.52},
-    {location: new google.maps.LatLng(53.217179, 6.609401), weight: 6.8},
-    {location: new google.maps.LatLng(53.220467, 6.615795), weight: 3.5},
-    {location: new google.maps.LatLng(53.224166, 6.613649), weight: 4.54},
-    {location: new google.maps.LatLng(53.229355, 6.61013), weight: 5.34},
-    {location: new google.maps.LatLng(53.23686, 6.593625), weight: 3.86},
-    {location: new google.maps.LatLng(53.241534, 6.585857), weight: 9.67},
-    {location: new google.maps.LatLng(53.24631, 6.581737), weight: 7.35},
-    {location: new google.maps.LatLng(53.248903, 6.576501), weight: 8.42},
-    {location: new google.maps.LatLng(53.246745, 6.572167), weight: 6.69},
-    {location: new google.maps.LatLng(53.240735, 6.568562), weight: 3.39},
-    {location: new google.maps.LatLng(53.238346, 6.561138), weight: 7.08},
-    {location: new google.maps.LatLng(53.237575, 6.548564), weight: 6.98},
-    {location: new google.maps.LatLng(53.235956, 6.539037), weight: 4.3},
-    {location: new google.maps.LatLng(53.234491, 6.528265), weight: 1.82},
-    {location: new google.maps.LatLng(53.230483, 6.531441), weight: 2.72},
-    {location: new google.maps.LatLng(53.226757, 6.534488), weight: 2.54},
-    {location: new google.maps.LatLng(53.222306, 6.538189), weight: 0.3},
-    {location: new google.maps.LatLng(53.213137, 6.541998), weight: 0.7},
-    {location: new google.maps.LatLng(53.207585, 6.548779), weight: 1.98},
-    {location: new google.maps.LatLng(53.202623, 6.552298), weight: 7.01},
-    {location: new google.maps.LatLng(53.234868, 6.603167), weight: 4.35},
-    {location: new google.maps.LatLng(53.21787, 6.539329), weight: 1.33},
-    {location: new google.maps.LatLng(53.202519, 6.559937), weight: 6.8},
-    {location: new google.maps.LatLng(53.208011, 6.580399), weight: 5.72},
-    {location: new google.maps.LatLng(53.21297, 6.592201), weight: 8.33},
-    {location: new google.maps.LatLng(53.215359, 6.604131), weight: 0.32},
-    {location: new google.maps.LatLng(53.204229, 6.569756), weight: 8.87},
-    {location: new google.maps.LatLng(53.229756, 6.546128), weight: 33.29},
-    {location: new google.maps.LatLng(53.210355, 6.562007), weight: 36.6},
-    {location: new google.maps.LatLng(53.232671, 6.557447), weight: 21.62},
-    {location: new google.maps.LatLng(53.234489, 6.580317), weight: 37.43},
-    {location: new google.maps.LatLng(53.226191, 6.59817), weight: 28.49},
-    {location: new google.maps.LatLng(53.220229, 6.590316), weight: 16.52},
-    {location: new google.maps.LatLng(53.214806, 6.557443), weight: 20.68},
-    {location: new google.maps.LatLng(53.213931, 6.573579), weight: 35.29},
-    {location: new google.maps.LatLng(53.227369, 6.570789), weight: 15.06},
-    {location: new google.maps.LatLng(53.222538, 6.56654), weight: 33.91},
-    {location: new google.maps.LatLng(53.221972, 6.578428), weight: 28.23}
-  ];
+function getGradePoints() {
+    var response = Get('http://localhost:8081/api/get/measurements_with_location?sensor_type=grade')
+    var maps = [];
+    if (response.status != 200) {
+        return maps
+    }
+    var jsonData = JSON.parse(response.responseText);
+
+    for (var i = 0; i < jsonData.length; i++) {
+        var row = jsonData[i];
+
+        maps.push({location: new google.maps.LatLng(row.Longtitude, row.latitude), weight: row.measurement_value})
+    }
+
+
+    return maps;
 }

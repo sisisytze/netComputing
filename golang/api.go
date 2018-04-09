@@ -95,12 +95,14 @@ FROM server`)
 }
 
 // This function will return all the different sensor types that are in use
-// http://localhost:8080/api/get/sensorTypes"
+// http://localhost:8080/api/get/sensor_types"
 func getSensorTypes(w http.ResponseWriter, r *http.Request) {
 	even := 1
 	if evenQuerry {
 		even = 0
 	}
+
+	log.Printf("getSensorTypes")
 
 	// These channels are used to communicate with the different go routines that are running for each server pair
 	responseChannel := make(chan []string)
@@ -111,7 +113,7 @@ func getSensorTypes(w http.ResponseWriter, r *http.Request) {
 
 	for _, dbPair := range databases {
 		// from all the server pairs get the data in go routines (parallel)
-		go func() {
+		go func(dbPair [2]*sql.DB) {
 			var (
 				rows *sql.Rows
 				err  error
@@ -153,7 +155,7 @@ func getSensorTypes(w http.ResponseWriter, r *http.Request) {
 			case <-time.After(time.Second * 1):
 			case <-ctx.Done():
 			}
-		}()
+		}(dbPair)
 	}
 
 	results := []string{}
@@ -167,6 +169,16 @@ func getSensorTypes(w http.ResponseWriter, r *http.Request) {
 			log.Printf("timeout waiting for server resonse")
 		}
 	}
+
+	if evenQuerry {
+		evenQuerry = false
+	} else {
+		evenQuerry = true
+	}
+
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	if len(results) == 0 {
 		log.Printf("database responses empty")
@@ -188,10 +200,8 @@ func getSensorTypes(w http.ResponseWriter, r *http.Request) {
 		log.Printf("error marshalling response, %v", err)
 		return
 	}
+	w.Header()
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-	w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Write(jsonResponse)
 }
 
@@ -201,6 +211,8 @@ func getMeasurementsWithLocation(w http.ResponseWriter, r *http.Request) {
 	if evenQuerry {
 		even = 0
 	}
+
+	log.Printf("getMeasurementsWithLocation")
 
 	responseChannel := make(chan []LocationMeasurement)
 	errorChannel := make(chan error)
@@ -221,7 +233,7 @@ func getMeasurementsWithLocation(w http.ResponseWriter, r *http.Request) {
 					even = (even + 1) % 2
 				}
 				rows, err = dbPair[even].Query(`
-     SELECT m2.value, sn.latitude, sn.longitude, sn.uuid, st.name
+     SELECT m2.value, sn.latitude, sn.longitude, sn.uuid, st.id
 	 FROM (measurement AS m2 JOIN sensor AS sn ON m2.sensor_uuid = sn.uuid) INNER JOIN sensortype AS st ON st.id = sn.sensor_type_id,  
 	 (
 	    SELECT uuid, MAX(at) AS moment
@@ -280,6 +292,10 @@ func getMeasurementsWithLocation(w http.ResponseWriter, r *http.Request) {
 		evenQuerry = true
 	}
 
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
 	if len(results) == 0 {
 		log.Printf("database responses empty")
 		http.Error(w, "nothing to return", http.StatusNoContent)
@@ -293,9 +309,6 @@ func getMeasurementsWithLocation(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-	w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Write(jsonResponse)
 }
 
