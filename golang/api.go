@@ -209,10 +209,9 @@ func getMeasurementsWithLocation(w http.ResponseWriter, r *http.Request) {
 
 	urlEncodedValues := r.URL.Query()
 	sensorType := urlEncodedValues.Get("sensor_type")
-
 	for _, dbPair := range databases {
 		// from all the server pairs get the data in parallel
-		go func() {
+		go func(dbPair [2]*sql.DB) {
 			var (
 				rows *sql.Rows
 				err  error
@@ -260,7 +259,7 @@ func getMeasurementsWithLocation(w http.ResponseWriter, r *http.Request) {
 			case <-time.After(time.Second * 1):
 			case <-ctx.Done():
 			}
-		}()
+		}(dbPair)
 	}
 
 	results := []LocationMeasurement{}
@@ -273,6 +272,12 @@ func getMeasurementsWithLocation(w http.ResponseWriter, r *http.Request) {
 		case <-time.After(time.Second * 2):
 			log.Printf("timeout waiting for server resonse")
 		}
+	}
+
+	if evenQuerry {
+		evenQuerry = false
+	} else {
+		evenQuerry = true
 	}
 
 	if len(results) == 0 {
@@ -313,14 +318,30 @@ func main() {
 		log.Fatalf("couldnt connect to routing database: %v", err)
 	}
 
-
 	if debug {
 		db1, err := sql.Open("mysql", "netcomp:envstat@tcp(94.23.200.26:3306)/db1")
 		if err != nil {
 			log.Fatalf("%v", err)
 		}
-		databases = [][2]*sql.DB{{db1, nil}}
+		db2, err := sql.Open("mysql", "netcomp:envstat@tcp(94.23.200.26:3306)/db2")
+		if err != nil {
+			log.Fatalf("%v", err)
+		}
+		databases = [][2]*sql.DB{{db1, db2}}
 		err = databases[0][0].Ping()
+		if err != nil {
+			log.Fatalf("%v", err)
+		}
+		err = databases[0][1].Ping()
+		if err != nil {
+			log.Fatalf("%v", err)
+		}
+		db3, err := sql.Open("mysql", "netcomp:envstat@tcp(94.23.200.26:3306)/db3")
+		if err != nil {
+			log.Fatalf("%v", err)
+		}
+		databases = append(databases, [2]*sql.DB{db3, nil})
+		err = databases[1][0].Ping()
 		if err != nil {
 			log.Fatalf("%v", err)
 		}
